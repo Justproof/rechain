@@ -171,9 +171,10 @@ fi
 if [ "$PROD" -eq 1 ]; then
     section "production ($PROD_HOST)"
     mkdir -p "$OUT"
-    SELECT_PHP="$(php_list "$CONTENT_COL" "${META_COLS[@]+"${META_COLS[@]}"}")"
+    # Column names as a double-quoted PHP list; the remote tinker call is single-quoted.
+    SELECT_PHP="$(php_list "$CONTENT_COL" "${META_COLS[@]+"${META_COLS[@]}"}" | tr "'" '"')"
     # The slug is kebab-case by the check above, so it is safe inside the quotes.
-    if ssh -o ConnectTimeout=10 "$PROD_HOST" "cd $REMOTE_PATH && php artisan tinker --execute '\$p = DB::table(\"$TABLE\")->where(\"$SLUG_COL\", \"$SLUG\")->orderBy(\"id\")->first([$(printf '%s' "$SELECT_PHP" | sed "s/'/\\\\\"/g")]); echo base64_encode(json_encode(\$p));'" 2>/dev/null \
+    if ssh -o ConnectTimeout=10 "$PROD_HOST" "cd $REMOTE_PATH && php artisan tinker --execute '\$p = DB::table(\"$TABLE\")->where(\"$SLUG_COL\", \"$SLUG\")->orderBy(\"id\")->first([$SELECT_PHP]); echo base64_encode(json_encode(\$p));'" 2>/dev/null \
         | base64 --decode > "$OUT/prod-row.json" && [ "$(jq -r 'type' "$OUT/prod-row.json" 2>/dev/null)" = "object" ]; then
         PROD_SHA="$(php -r 'echo hash("sha256", (string) json_decode(file_get_contents($argv[1]), true)[$argv[2]]);' "$OUT/prod-row.json" "$CONTENT_COL")"
         echo "saved: $OUT/prod-row.json"
