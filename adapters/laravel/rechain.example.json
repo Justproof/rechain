@@ -1,0 +1,45 @@
+{
+  "_comment": "Copy to .claude/rechain.json in your Laravel project. Keys marked optional may be null. These are pcdrama.com's values.",
+
+  "ssh_host": "pc",
+  "_ssh_host": "ssh alias for production; an alias, never a hostname with credentials",
+
+  "remote_path": "pcdrama.com",
+  "_remote_path": "directory on the production host that holds artisan",
+
+  "site_url": "https://pcdrama.com",
+  "local_url": "https://pcdrama.com.test",
+  "blog_path": "/blog",
+  "_blog_path": "URL prefix in front of the slug on both hosts",
+
+  "table": "blogs",
+  "slug_column": "post_name",
+  "content_column": "post_content",
+  "status_column": "post_status",
+  "published_value": "publish",
+  "_status": "status_column and published_value may be null when every row is live",
+
+  "title_column": "post_title",
+  "meta_title_column": "meta_title",
+  "meta_description_column": "meta_description",
+  "meta_keyword_column": "meta_keyword",
+  "image_column": "image",
+  "image_alt_column": "post_image_alt",
+  "updated_at_column": "updated_at",
+  "_meta": "any of the six columns above may be null; the generator only swaps the ones present",
+
+  "storage_dir": "storage/app/refresh-post",
+  "_storage_dir": "git-ignored; one subdirectory per slug holds prod-row.json, before.html, draft.html, chain-edits.php",
+
+  "stub_path": "scripts/lib/post-rewrite-migration.stub",
+  "migration_prefix": "rewrite",
+
+  "widgets_config": "post-widgets",
+  "_widgets_config": "optional: a config file keyed by slug whose rows carry anchors a rewrite must keep matching; null to skip",
+
+  "ledger_path": ".claude/skills/refresh-post/ledger.json",
+  "_ledger_path": "optional: JSON list of past rewrites by slug; null to skip",
+
+  "stop_reason_class": "App\\Support\\RefreshPostTarget",
+  "_stop_reason_class": "optional: a class with static stopReason(string $slug, string $content): ?string; null to skip"
+}

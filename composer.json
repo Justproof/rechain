@@ -1,0 +1,21 @@
+{
+    "name": "justproof/rechain",
+    "description": "Claude Code skill: rewrite the joints of a published article so every paragraph follows from or reverses the one before it, with a mechanical checker and a Laravel adapter.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2"
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.0",
+        "symfony/process": "^7.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest"
+    }
+}
