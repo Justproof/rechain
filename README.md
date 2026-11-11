@@ -58,6 +58,10 @@ composer install
 vendor/bin/pest
 ```
 
+## See also
+
+The rule works on any prose, so it works on a plan too. [compound-skills](https://github.com/Justproof/compound-skills) holds `prd-bake`, which questions you until every decision in a feature is written down, and `compound-engineering`, which records what each build taught so the next one starts ahead. A PRD from the first is a good thing to rechain before anyone builds from it.
+
 ## Where it came from
 
 Built on pcdrama.com on 2026-11-06, where it rechained nine posts the day the rule was written. The lessons from those runs (anchors that constrain lead-ins, British spellings hiding in alt text, once-tier words an article already carries) are in `SKILL.md`.
