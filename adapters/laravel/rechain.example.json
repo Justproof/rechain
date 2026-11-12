@@ -40,6 +40,9 @@
   "ledger_path": ".claude/skills/refresh-post/ledger.json",
   "_ledger_path": "optional: JSON list of past rewrites by slug; null to skip",
 
+  "banned_phrases": ".claude/docs/banned-phrases.md",
+  "_banned_phrases": "optional: a Markdown ban list with fenced banned-hard, banned-once and banned-allow blocks (format in the skill README), relative to the project root; the checker scans every draft against it. null falls back to a built-in hard list's quick scan",
+
   "stop_reason_class": "App\\Support\\RefreshPostTarget",
   "_stop_reason_class": "optional: a class with static stopReason(string $slug, string $content): ?string; null to skip"
 }

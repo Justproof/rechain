@@ -2,7 +2,7 @@
 #
 # rechain-check.sh — what /rechain reads before the migration is generated: the
 # counts a joints-only rewrite must not change, the label test from the
-# causal-chain rule, a quick scan for hard-banned words and British spellings,
+# causal-chain rule, the banned-phrase scan and British spellings,
 # and the local row's meta description and hero alt. With --first-words it
 # prints the first clause of every paragraph per H2 instead, which is the
 # first-words test laid out for reading.
@@ -13,9 +13,11 @@
 # Reads {storage_dir}/{slug}/draft.html against before.html, writing before.html
 # from prod-row.json (saved by refresh-post-triage.sh) when it is missing. The
 # checker itself is the global skill's scripts/rechain-check.php; set
-# RECHAIN_SKILL if the clone is not at ~/.claude/skills/rechain. Read-only
-# otherwise. The last line is the verdict; exit 1 on stop so it can gate a
-# chained command.
+# RECHAIN_SKILL if the clone is not at ~/.claude/skills/rechain. When the
+# config names banned_phrases, the checker scans the draft against that file
+# (the same list the project's own guard reads); without it, a built-in list
+# stands in. Read-only otherwise. The last line is the verdict; exit 1 on stop
+# so it can gate a chained command.
 
 set -euo pipefail
 
@@ -55,6 +57,13 @@ PUBLISHED="$(opt published_value)"
 STORAGE_DIR="$(cfg storage_dir)"
 META_COL="$(opt meta_description_column)"; [ -z "$META_COL" ] || META_COL="$(ident meta_description_column "$META_COL")"
 ALT_COL="$(opt image_alt_column)"; [ -z "$ALT_COL" ] || ALT_COL="$(ident image_alt_column "$ALT_COL")"
+BANNED_FILE="$(opt banned_phrases)"
+BANNED_ARGS=()
+if [ -n "$BANNED_FILE" ]; then
+    [[ "$BANNED_FILE" = /* ]] || BANNED_FILE="$ROOT/$BANNED_FILE"
+    [ -f "$BANNED_FILE" ] || die "config key \"banned_phrases\" names $BANNED_FILE, which does not exist"
+    BANNED_ARGS=("--banned=$BANNED_FILE")
+fi
 
 SLUG=""
 MODE="checks"
@@ -64,7 +73,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --first-words) MODE="first-words"; shift ;;
         --no-meta)     META=0; shift ;;
-        -h|--help)     sed -n '3,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+        -h|--help)     sed -n '3,21p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
         -*)            die "unknown argument: $1" ;;
         *)             SLUG="$1"; shift ;;
     esac
@@ -95,7 +104,7 @@ if [ "$MODE" = "first-words" ]; then
 fi
 
 STATUS=0
-php "$CHECK" "$BEFORE" "$DRAFT" checks || STATUS=$?
+php "$CHECK" "$BEFORE" "$DRAFT" checks ${BANNED_ARGS[@]+"${BANNED_ARGS[@]}"} || STATUS=$?
 
 # The published-row filter, as a PHP where() chain fragment (empty when the config has no status column).
 WHERE="where('$SLUG_COL', '$SLUG')"

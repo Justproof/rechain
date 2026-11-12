@@ -38,7 +38,7 @@ A rechain changes where the paragraphs sit and how they join, not what they say.
 | Path                             | What it does                                                                                                                                              |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `docs/causal-chain.md`           | The rule: every block is a "so" or a "but" on the one before it; where the chain starts and ends; how it applies by block; the three tests                |
-| `scripts/rechain-check.php`      | The mechanical half: invariant counts, label test, paragraph-opener tally, a hard-banned quick scan, British spellings; `first-words` and `british` modes |
+| `scripts/rechain-check.php`      | The mechanical half: invariant counts, label test, paragraph-opener tally, the banned-phrase scan (`--banned=FILE`), British spellings; `first-words` and `british` modes |
 | `scripts/rechain-edits.stub.php` | The edit list as a script: one `[$old, $new]` pair per joint, replayed against the live copy, stops unless every anchor matches exactly once              |
 | `adapters/laravel/`              | A working adapter for a Laravel site with a posts table: triage over ssh, draft load, a hash-guarded migration generator, the ship steps                  |
 | `tests/`                         | Pest tests for the checker; `composer install && vendor/bin/pest`                                                                                         |
@@ -102,18 +102,18 @@ A rechain may: reorder blocks within a section, move a block across sections whe
 ### 4. Check before anyone reads it
 
 ```bash
-php ~/.claude/skills/rechain/scripts/rechain-check.php $DIR/before.html $DIR/draft.html
+php ~/.claude/skills/rechain/scripts/rechain-check.php $DIR/before.html $DIR/draft.html --banned=path/to/banned-phrases.md
 ```
 
 - **Invariants:** spans, links and images must read `same` (stop). Headings, tables, details and blockquotes may change when a block moved; the change summary says why.
 - **Label test:** any label stops; a single literal "Therefore" survives, a third does not.
 - **Paragraph openers:** a tally of "So", "But", "That leaves" and friends. Four of one is a tic; vary the wording or let the order carry the link.
-- **Hard-banned quick scan:** a default list of worn words ("honest", "quietly", "genuinely", "landscape" and friends). Your project's own gate is the authority; this scan saves a round trip when it catches one early.
+- **Banned phrases:** pass `--banned=FILE` with the project's own ban list (format in README.md) so the checker reads the same list the project's gate does: hard entries stop at one hit, once-per-piece entries at two, allow entries are removed first. Quotes, code and citations are not scanned. Without the flag a built-in hard list stands in, and the header says so; that is a quick scan, not the gate. Em dashes stop either way.
 - **British spellings:** US English, alt text included. The scan reads body text and `alt` and `title` attributes; the adapter passes the hero image alt separately in `british` mode. Three British forms reached production on one post before the scan read alt text. A proper noun stays British only on the owner's word.
 - **Meta description:** two sentences, one link, 160 characters or fewer (the adapter prints the live one).
 - **A literal verb can still trip a banned-word regex.** "unlocks a parked Tesla's doors" fails an "unlock" tic regex that only exempts "unlock the door"; reword to the plain verb ("opens") rather than arguing with the gate.
 - **Anchors constrain where a lead-in can go.** A widget anchored on `</table>(?=\s*<h2...)` means nothing may sit between that table and the H2, so the table's follow-up becomes the next section's first paragraph.
-- **Once-tier words the article already carries.** A project gate that allows a word once reads the whole after body, so an article that already uses "actually" twice fails the moment it is rechained, and the quick scan here only reports the hard tier. Before shipping, count your project's once-tier words in the draft and drop one occurrence in an edit pair.
+- **Once-tier words the article already carries.** A gate that allows a word once reads the whole draft, so an article that already used "actually" twice fails the moment it is rechained, even though the rechain added neither. The `--banned` scan reports it; drop one occurrence in an edit pair. Before the scan read the once tier, this cost a rollback, a delete and a regeneration on one post.
 
 Fix in `chain-edits.php`, rebuild, rerun until `verdict: ready`.
 
@@ -147,6 +147,6 @@ Gates: {n} passed
 - One article per run. Facts, links, images, glossary spans and project anchors unchanged; the check script's `stop` tiers are the gate.
 - The first paragraph names the event. Never open on a question or a thesis, whoever proposed it.
 - The words are free, the labels are not: no "Therefore:", "This happened:", "But:"; a literal "Therefore" at most once or twice.
-- US English, alt text included. No em dashes, no "honest", no "quietly", no stage-play framing.
+- US English, alt text included. No em dashes, no stage-play framing, and nothing on the project's ban list: the checker reads that list, so it is the one copy. Keep words out of this file; a second copy here is how the lists drifted.
 - Rebuild the draft from `before.html` through `chain-edits.php`; never hand-patch `draft.html`.
 - Ship only on "Commit + deploy"; purge only the article's URL.

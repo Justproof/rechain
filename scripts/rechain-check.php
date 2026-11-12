@@ -1,24 +1,109 @@
 <?php
 
 /**
- * The mechanical half of the causal-chain checks. Called by
- * scripts/rechain-check.sh with the before and draft HTML of one post.
+ * The mechanical half of the causal-chain checks, for the before and draft
+ * HTML of one article. Run it directly or through an adapter's wrapper.
  *
- *   php scripts/lib/rechain-check.php BEFORE.html DRAFT.html [checks|first-words|british]
+ *   php scripts/rechain-check.php BEFORE.html DRAFT.html [checks|first-words|british] [--banned=FILE]
  *
  * "checks" prints the invariant counts a rechain must not change, the label
- * test from .claude/docs/causal-chain.md, a quick scan for the hard-banned
- * words BannedPhrasesTest will fail on, and the British spellings the house
- * style bans. The last line is the verdict (exit 1 on stop). "first-words"
- * prints the first clause of every paragraph under each H2, which is the
- * first-words test laid out for reading. "british" scans DRAFT alone (the
- * wrapper passes the hero alt text this way). The swap test stays a reading.
+ * test from docs/causal-chain.md, the banned-phrase scan, and the British
+ * spellings the house style bans. The last line is the verdict (exit 1 on
+ * stop). "first-words" prints the first clause of every paragraph under each
+ * H2, which is the first-words test laid out for reading. "british" scans
+ * DRAFT alone (a wrapper passes the hero alt text this way). The swap test
+ * stays a reading.
+ *
+ * --banned=FILE reads the project's own ban list: a Markdown file with fenced
+ * banned-hard, banned-once and banned-allow blocks (format in README.md).
+ * Hard entries stop at one hit, once entries at two, allow entries are
+ * removed before matching. Without it, a built-in hard list stands in. Em
+ * dashes stop either way.
  */
-[$before, $draft, $mode] = [$argv[1] ?? null, $argv[2] ?? null, $argv[3] ?? 'checks'];
+$args = array_slice($argv, 1);
+$bannedFile = null;
+foreach ($args as $i => $arg) {
+    if (str_starts_with($arg, '--banned=')) {
+        $bannedFile = substr($arg, 9);
+        unset($args[$i]);
+    }
+}
+[$before, $draft, $mode] = [...array_values($args), null, null, null];
+$mode ??= 'checks';
 
 if (! $before || ! $draft || ! is_file($before) || ! is_file($draft)) {
-    fwrite(STDERR, "usage: rechain-check.php BEFORE.html DRAFT.html [checks|first-words|british]\n");
+    fwrite(STDERR, "usage: rechain-check.php BEFORE.html DRAFT.html [checks|first-words|british] [--banned=FILE]\n");
     exit(2);
+}
+
+/**
+ * The built-in hard list, used only when no --banned file is given. Same
+ * entry syntax as a banned-hard block.
+ *
+ * @var list<string>
+ */
+const BUILT_IN_HARD = [
+    'honest', 'honestly', 'honesty', 'quietly', 'genuinely', 'landscape',
+    're:\bdeep[- ]dive\b',
+    'the good news', 'the math', 'bottom line', 'under the hood',
+    're:\b(?:lands|landed)\b',
+    're:\blanding\b(?!\s+(?:pages?|zones?|gear))',
+    're:\bunlock(?:s|ing)?\b(?!\s+(?:(?:the|your|a)\s+)?(?:domain|door|account|phone|device|screen|file|laptop)s?\b)',
+    're:\bleverag(?:es|ed|ing)\b',
+    're:\belevat(?:e|es|ed|ing)\b(?!\s+(?:privileges?|permissions?|access|rights))',
+];
+
+/**
+ * Parses a ban-list file. A since:STAMP prefix is dropped: it exists to spare
+ * old shipped copy, and a draft is new copy.
+ *
+ * @return array{hard: list<string>, once: list<string>, allow: list<string>}
+ */
+function bannedRules(string $markdown): array
+{
+    preg_match_all('/```banned-(hard|once|allow)\R(.*?)```/s', $markdown, $blocks, PREG_SET_ORDER);
+    $rules = ['hard' => [], 'once' => [], 'allow' => []];
+    foreach ($blocks as [, $tier, $body]) {
+        foreach (preg_split('/\R/', $body) ?: [] as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
+            $rules[$tier][] = preg_replace('/^since:\d{4}_\d{2}_\d{2}_\d{6}\s+/', '', $line) ?? $line;
+        }
+    }
+
+    return $rules;
+}
+
+/** A literal entry matches as whole words, any whitespace between them; re: is a PCRE body. */
+function bannedPattern(string $entry): string
+{
+    if (str_starts_with($entry, 're:')) {
+        return '~'.substr($entry, 3).'~iu';
+    }
+
+    return '~\b'.preg_replace('/\s+/', '\s+', preg_quote($entry, '~')).'\b~iu';
+}
+
+if ($bannedFile !== null) {
+    if (! is_file($bannedFile)) {
+        fwrite(STDERR, "rechain-check: no ban list at {$bannedFile}\n");
+        exit(2);
+    }
+    $bannedRules = bannedRules((string) file_get_contents($bannedFile));
+    if ($bannedRules['hard'] === [] && $bannedRules['once'] === []) {
+        fwrite(STDERR, "rechain-check: {$bannedFile} has no banned-hard or banned-once block\n");
+        exit(2);
+    }
+    foreach ([...$bannedRules['hard'], ...$bannedRules['once']] as $entry) {
+        if (@preg_match(bannedPattern($entry), '') === false) {
+            fwrite(STDERR, "rechain-check: invalid pattern in {$bannedFile}: {$entry}\n");
+            exit(2);
+        }
+    }
+} else {
+    $bannedRules = ['hard' => BUILT_IN_HARD, 'once' => [], 'allow' => []];
 }
 
 $british = '~\b\w*(?:centre|colour|favour|behaviour|neighbour|honour|labour|organis|analys(?:e|ed|ing)\b|licence|programme|grey|fibre|metre|litre|defence|offence|catalogue|optimis|recognis|realis(?!t)|minimis|maximis|prioritis|summaris|standardis|utilis|customis|labell|modell|travell|cancell|judgement|towards|whilst|amongst|cheque|tyre|kerb|aluminium|manoeuvre)\w*~i';
@@ -168,28 +253,49 @@ foreach ($openers as $word => $n) {
     }
 }
 
-echo "\n== hard-banned words (quick scan; BannedPhrasesTest is the authority) ==\n";
-$scannable = preg_replace('~<(blockquote|code|pre|cite)\b.*?</\1>~is', '', $d) ?? $d;
-$scannable = text($scannable);
-$banned = [
-    '~\b(?:honest|honestly|honesty|quietly|genuinely|landscape)\b~i',
-    '~\bdeep[- ]dive\b~i',
-    '~\b(?:the good news|the math|bottom line|under the hood)\b~i',
-    '~\b(?:lands|landed)\b~i',
-    '~\bunlock(?:s|ing)?\b(?!\s+(?:(?:the|your|a)\s+)?(?:domain|door|account|phone|device|screen|file|laptop)s?\b)~i',
-    '~\bleverag(?:es|ed|ing)\b~i',
-    '~\belevat(?:e|es|ed|ing)\b(?!\s+(?:privileges?|permissions?|access|rights))~i',
-    '~—~u',
-];
-$bannedHits = [];
-foreach ($banned as $re) {
-    $bannedHits = [...$bannedHits, ...hits($scannable, $re)];
+echo "\n== banned phrases (".($bannedFile !== null ? $bannedFile : 'built-in hard list; pass --banned=FILE for the project\'s own').") ==\n";
+// Quotes, code and citations are someone else's words, so they are not scanned.
+$scannable = preg_replace('~<(script|style|pre|code|blockquote|q|cite)\b[^>]*>.*?</\1>~is', ' ', $d) ?? $d;
+$scannable = preg_replace('~<[^>]*>~', ' ', $scannable) ?? $scannable;
+$scannable = html_entity_decode($scannable, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+$scannable = str_replace(["\u{2019}", "\u{2018}", "\u{00A0}"], ["'", "'", ' '], $scannable);
+$scannable = preg_replace('~\s+~u', ' ', $scannable) ?? $scannable;
+foreach ($bannedRules['allow'] as $entry) {
+    $scannable = str_ireplace($entry, ' ', $scannable);
 }
-if ($bannedHits === []) {
+$bannedReport = [];
+$hardHits = 0;
+foreach ($bannedRules['hard'] as $entry) {
+    foreach (hits($scannable, bannedPattern($entry)) as $hit) {
+        $bannedReport[] = "hard  {$hit}";
+        $hardHits++;
+    }
+}
+foreach (hits($scannable, '~—~u') as $hit) {
+    $bannedReport[] = "hard  {$hit}";
+    $hardHits++;
+}
+$onceOver = 0;
+foreach ($bannedRules['once'] as $entry) {
+    $found = hits($scannable, bannedPattern($entry));
+    if (count($found) > 1) {
+        $onceOver++;
+        $bannedReport[] = 'once  '.count($found)." hits, one allowed: {$entry}";
+        foreach ($found as $hit) {
+            $bannedReport[] = "        {$hit}";
+        }
+    }
+}
+if ($bannedReport === []) {
     echo "none\n";
 } else {
-    echo '  '.implode("\n  ", $bannedHits)."\n";
-    $stops[] = count($bannedHits).' hard-banned word(s) or em dash(es)';
+    echo '  '.implode("\n  ", $bannedReport)."\n";
+}
+if ($hardHits > 0) {
+    $stops[] = "{$hardHits} hard-banned phrase(s) or em dash(es)";
+}
+if ($onceOver > 0) {
+    $stops[] = "{$onceOver} once-per-piece phrase(s) used more than once";
 }
 
 echo "\n== British spellings (house style is US English, alt text included) ==\n";

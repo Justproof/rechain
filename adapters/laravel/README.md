@@ -51,6 +51,7 @@ Add `storage_dir` to `.gitignore` if it is not already under an ignored path. Ne
 | `migration_prefix`                                                                                        | no       | First word of the migration file name; default `rewrite`.                                              |
 | `widgets_config`                                                                                          | no       | A config file keyed by slug whose rows carry regex anchors a rewrite must keep matching. Null to skip. |
 | `ledger_path`                                                                                             | no       | JSON list of past rewrites by slug. Null to skip.                                                      |
+| `banned_phrases`                                                                                          | no       | Your ban list (format in the skill README), relative to the project root. The checker scans every draft against it. Null to use the built-in quick scan.|
 | `stop_reason_class`                                                                                       | no       | A class with `static stopReason(string $slug, string $content): ?string`. Null to skip.                |
 
 Keys starting with `_` are comments and are ignored.
@@ -118,4 +119,4 @@ php artisan tinker --execute 'print_r(DB::table("migrations")->where("migration"
 
 ## What pcdrama.com adds and this adapter does not ship
 
-pcdrama runs four Pest gates on every new content migration: a banned-phrases list with hard and once-only tiers, a sentence-shape budget, a split-image layout check, and a test that no agent-instruction text leaked into copy. They encode one house style and read that project's docs, so they stay there. The global checker's hard-banned quick scan is the part that travels; your own gate, if you have one, is the authority.
+pcdrama runs four Pest gates on every new content migration: a banned-phrases list with hard and once-only tiers, a sentence-shape budget, a split-image layout check, and a test that no agent-instruction text leaked into copy. They encode one house style and read that project's docs, so they stay there. The part that travels is the ban-list format: set `banned_phrases` and the checker reads the same file your own gate does, so the two cannot disagree.

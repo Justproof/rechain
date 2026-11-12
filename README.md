@@ -12,7 +12,7 @@ The rule is one sentence: between any two consecutive blocks, the reader must be
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SKILL.md`                       | The skill: the three tests (swap, first-words, label), the seven fixes seen so far, the edit-script pattern, the check, the ready report, the hard rules    |
 | `docs/causal-chain.md`           | The rule in full, with a worked example and how it applies to TL;DRs, tables, FAQs, captions, meta descriptions and emails                                  |
-| `scripts/rechain-check.php`      | The mechanical checker: counts a joints-only rewrite must not change, the label test, a paragraph-opener tally, a hard-banned quick scan, British spellings |
+| `scripts/rechain-check.php`      | The mechanical checker: counts a joints-only rewrite must not change, the label test, a paragraph-opener tally, the banned-phrase scan, British spellings |
 | `scripts/rechain-edits.stub.php` | The edit list as a replayable script; stops unless every anchor matches the live copy exactly once                                                          |
 | `adapters/laravel/`              | A working adapter for a Laravel site with a posts table: triage over ssh, draft load, a hash-guarded reversible migration generator, the ship steps         |
 | `tests/`                         | Pest tests for the checker, with fixtures                                                                                                                   |
@@ -46,6 +46,39 @@ php ~/.claude/skills/rechain/scripts/rechain-check.php before.html draft.html   
 ```
 
 The checker's last line is the verdict and its exit code is 1 on stop, so it can gate a chained command.
+
+## Your ban list
+
+Without one, the checker scans for a short built-in list of worn words and says so in the header. That list is a stand-in, and a stand-in drifts: the copy this repo used to carry missed four of the patterns its first project banned. So point the checker at your own:
+
+```sh
+php ~/.claude/skills/rechain/scripts/rechain-check.php before.html draft.html --banned=docs/banned-phrases.md
+```
+
+The file is Markdown, and only three fenced blocks in it are read, so the rules can sit beside their reasons:
+
+````markdown
+```banned-hard
+# Stops at one hit. A literal line matches whole words, case-insensitive.
+honest
+# re: is a PCRE body, compiled as ~body~iu
+re:\bdeep[- ]dive\b
+# since:STAMP spares copy shipped before the ban; a draft is new copy, so the checker ignores it
+since:2026_09_30_172118 re:\b(?:lands|landed)\b
+```
+
+```banned-once
+# Fine once per piece, stops at two
+actually
+```
+
+```banned-allow
+# Removed before matching: a cited title, a product name
+Search Engine Land
+```
+````
+
+Quotes, code, citations and `<script>`/`<style>` are skipped. If your project tests its copy against the same file, the checker and the test can no longer disagree.
 
 ## Use it on a site
 
