@@ -31,6 +31,8 @@ A rechain changes where the paragraphs sit and how they join, not what they say.
 
 **Rule:** `~/.claude/skills/rechain/docs/causal-chain.md`. Read it first, every run.
 
+**Sibling skills:** [compound-skills](https://github.com/Justproof/compound-skills). Its `compound-engineering` review step sends prose here when a change adds or rewrites something read in order, and its `prd-bake` writes the PRDs that build plans start from. When a run here turns up a lesson about the rule itself, `compound-engineering` step 4 says where to record it.
+
 ## What is in this skill
 
 | Path                             | What it does                                                                                                                                              |
