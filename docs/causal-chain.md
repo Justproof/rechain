@@ -28,7 +28,7 @@ A link holds when the reader can see the mechanism, and the mechanism is usually
 - **The first paragraph names the first cause.** What happened, in literal terms, before any consequence is drawn. The opening is not a summary of the conclusions; it is the event the rest follows from.
 - **Each H2 restarts a chain** from the cause its heading asks about, and the chains join: the last block of one section is the cause of the first block of the next, or the question it leaves open.
 - **The "but" is where the finding lives.** "We expected X, but Y" is the surprise that `information-gain.md` asks for, stated as a reversal. One or two reversals per section carry a piece; a reversal in every paragraph is the turn-close groove `shape-budget.md` budgets, so the two rules meet here: put the "but" at the start of a block or inside a sentence, not as a short closing drum hit.
-- **The owner line is the last "so".** The plain consequence sentence that closes a gain section is the chain's end for the business owner: this is what we measured, so this is what changes for you.
+- **The owner line is the last "so".** The plain consequence sentence that closes a gain section is the chain's end for the business owner: this is what we measured, so this is what changes for you. What that change has to be (a problem gone, a step skipped or a feeling had) is in [`reader-payoff.md`](reader-payoff.md).
 
 ## By block
 

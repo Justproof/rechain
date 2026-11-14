@@ -29,7 +29,7 @@ A rechain changes where the paragraphs sit and how they join, not what they say.
 
 **Target:** one article, as HTML. One article per run. The owner reads the draft on their own site and says when it ships.
 
-**Rule:** `~/.claude/skills/rechain/docs/causal-chain.md`. Read it first, every run.
+**Rule:** `~/.claude/skills/rechain/docs/causal-chain.md` for the joints, and `~/.claude/skills/rechain/docs/reader-payoff.md` for what the last "so" has to name. Read both first, every run.
 
 **Sibling skills:** [compound-skills](https://github.com/Justproof/compound-skills). Its `compound-engineering` review step sends prose here when a change adds or rewrites something read in order, and its `prd-bake` writes the PRDs that build plans start from. When a run here turns up a lesson about the rule itself, `compound-engineering` step 4 says where to record it.
 
@@ -38,6 +38,7 @@ A rechain changes where the paragraphs sit and how they join, not what they say.
 | Path                             | What it does                                                                                                                                              |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `docs/causal-chain.md`           | The rule: every block is a "so" or a "but" on the one before it; where the chain starts and ends; how it applies by block; the three tests                |
+| `docs/reader-payoff.md`          | What the chain ends on: the last "so" names a solution, a convenience or an experience in the reader's terms; the payoff test |
 | `scripts/rechain-check.php`      | The mechanical half: invariant counts, label test, paragraph-opener tally, the banned-phrase scan (`--banned=FILE`), British spellings; `first-words` and `british` modes |
 | `scripts/rechain-edits.stub.php` | The edit list as a script: one `[$old, $new]` pair per joint, replayed against the live copy, stops unless every anchor matches exactly once              |
 | `adapters/laravel/`              | A working adapter for a Laravel site with a posts table: triage over ssh, draft load, a hash-guarded migration generator, the ship steps                  |
@@ -79,13 +80,15 @@ Write down each failing joint and the fix it needs. The fixes seen so far, in or
 2. **Move the block to its cause.** A quote, figure or paragraph that introduces a later section belongs just before that section. Moving an Andrew Ng "halfway there" quote to the end of a build-line section let the next H2 open with "Halfway, because...".
 3. **Table lead-in and follow-up.** The paragraph before a table says why it is here; the paragraph after it draws the consequence. A table with neither is "and then" in a grid.
 4. **The reversal opens a block.** "The other four never join the line, because none of them hands over a build" is a "but" that starts a paragraph. A short closing "But not for long." is a drum hit, and a drum hit at the end of every block is a tic.
-5. **Owner line last.** The plain consequence for the business owner closes its section; it is the chain's last "so", not a mid-section aside.
+5. **Owner line last.** The plain consequence for the business owner closes its section; it is the chain's last "so", not a mid-section aside. It names one payoff from `docs/reader-payoff.md` (a problem gone, a step skipped, a feeling had), not a change to the system; "so the header is set" needs one more "so".
 6. **FAQ answers lead with the answer**, then the reason. Never a second unrelated fact.
 7. **Accordion lead-ins.** A `<details>` block gets one sentence before it saying what the reader will find and why it is here.
 
 **Where the chain starts.** The first paragraph names the event in literal terms: what happened, when, to whom. Not a question, not a thesis, not a summary of the conclusions. When the owner proposes an opener that is a question or a thesis ("Is each company training people, training AI, or training people to use AI?"), say that the rule puts the event first, and fold the idea into the paragraph where its cause sits. When the owner hands over a replacement sentence, keep whatever mechanism the next "so" depends on; "the ads sit among those links" had to survive the rewrite of the sentence it lived in, because the next paragraph's "so the fewer search ads" needs it.
 
-Say in the report which section needed the most reordering.
+**Where the chain ends.** Run the payoff test from `docs/reader-payoff.md` on the last block and on each owner line: which of the three, in whose terms, and is every link down to it already on the page. A payoff sitting mid-section or in the FAQ moves to the close; that is a joint edit. An article with no payoff in its copy gets reported, not supplied: a rechain adds no facts.
+
+Say in the report which section needed the most reordering and which payoff the piece ends on.
 
 ### 3. Write the edits as a script
 
@@ -127,7 +130,7 @@ Change it only when the old one is a list of two facts or no longer matches the 
 
 ### 7. Ready, then wait
 
-Tell the owner: preview link, word count before and after, the number of joints rewritten, the section that moved most, meta changed or not, invariants `same`, gates passed. Then wait for "Commit + deploy". Never ship on anything else.
+Tell the owner: preview link, word count before and after, the number of joints rewritten, the section that moved most, the payoff the piece ends on, meta changed or not, invariants `same`, gates passed. Then wait for "Commit + deploy". Never ship on anything else.
 
 ### 8. Ship and report
 
@@ -137,6 +140,7 @@ The adapter's ship step. Then:
 Rechained: {slug}  ({before words} -> {after words} words)
 Joints rewritten: {n}; most reordering in "{H2}"
 Blocks moved: {list, e.g. Andrew Ng quote -> end of build-line section}
+Payoff: solution | convenience | experience, or "none in the copy" ({section})
 Meta description: unchanged | new (chars)
 Invariants: spans {n}, links {n}, images {n}, anchors ok
 Gates: {n} passed
@@ -146,6 +150,7 @@ Gates: {n} passed
 
 - One article per run. Facts, links, images, glossary spans and project anchors unchanged; the check script's `stop` tiers are the gate.
 - The first paragraph names the event. Never open on a question or a thesis, whoever proposed it.
+- The last "so" names a solution, a convenience or an experience in the reader's terms. Move a payoff the article already carries; never invent one.
 - The words are free, the labels are not: no "Therefore:", "This happened:", "But:"; a literal "Therefore" at most once or twice.
 - US English, alt text included. No em dashes, no stage-play framing, and nothing on the project's ban list: the checker reads that list, so it is the one copy. Keep words out of this file; a second copy here is how the lists drifted.
 - Rebuild the draft from `before.html` through `chain-edits.php`; never hand-patch `draft.html`.

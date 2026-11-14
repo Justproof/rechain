@@ -12,6 +12,7 @@ The rule is one sentence: between any two consecutive blocks, the reader must be
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SKILL.md`                       | The skill: the three tests (swap, first-words, label), the seven fixes seen so far, the edit-script pattern, the check, the ready report, the hard rules    |
 | `docs/causal-chain.md`           | The rule in full, with a worked example and how it applies to TL;DRs, tables, FAQs, captions, meta descriptions and emails                                  |
+| `docs/reader-payoff.md`          | What the last "so" has to name: a solution, a convenience or an experience, with the payoff test and how it applies in a rechain |
 | `scripts/rechain-check.php`      | The mechanical checker: counts a joints-only rewrite must not change, the label test, a paragraph-opener tally, the banned-phrase scan, British spellings |
 | `scripts/rechain-edits.stub.php` | The edit list as a replayable script; stops unless every anchor matches the live copy exactly once                                                          |
 | `adapters/laravel/`              | A working adapter for a Laravel site with a posts table: triage over ssh, draft load, a hash-guarded reversible migration generator, the ship steps         |
@@ -28,7 +29,7 @@ That makes `/rechain` available in every project Claude Code opens. Update with 
 To point your global instructions at the rule, add to `~/.claude/CLAUDE.md`:
 
 ```markdown
-Every paragraph follows from the one before it or reverses it, never "and then". Rule and tests: `~/.claude/skills/rechain/docs/causal-chain.md`.
+Every paragraph follows from the one before it or reverses it, never "and then". Rule and tests: `~/.claude/skills/rechain/docs/causal-chain.md`. The chain ends on something the reader would pay for (a problem gone, a step skipped, a feeling had): `~/.claude/skills/rechain/docs/reader-payoff.md`.
 ```
 
 ## Use it on two files
